@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emica Shopping Cart Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 120px; /* Increased padding for the larger bottom bar */
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header .item-count {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .scan-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .scan-button {
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.3s;
+        }
+
+        .scan-button:hover {
+            background: #45a049;
+        }
+
+        .scan-button:active {
+            transform: scale(0.98);
+        }
+
+        .manual-entry-btn {
+            width: 100%;
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        #videoContainer {
+            display: none;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        #video {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: #4CAF50;
+            box-shadow: 0 0 10px #4CAF50;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0%, 100% { transform: translateY(-100px); }
+            50% { transform: translateY(100px); }
+        }
+
+        .cart-empty {
+            text-align: center;
+            color: #757575;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .cart-empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .cart-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .item-info h3 {
+            font-size: 18px;
+            color: #212121;
+            margin-bottom: 4px;
+        }
+
+        .item-price {
+            color: #757575;
+            font-size: 14px;
+        }
+
+        .item-subtotal {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .item-divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 12px 0;
+        }
+
+        .item-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .qty-btn {
+            width: 36px;
+            height: 36px;
+            border: 2px solid #4CAF50;
+            background: white;
+            color: #4CAF50;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .qty-btn:hover {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .qty-btn:active {
+            transform: scale(0.95);
+        }
+
+        .quantity {
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #f5f5f5;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .icon-btn.delete:hover {
+            background: #ffebee;
+            color: #f44336;
+        }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+
+        .bottom-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .total-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .total-info {
+            text-align: left;
+        }
+
+        .total-label {
+            color: #757575;
+            font-size: 14px;
+        }
+        
+        #budgetDisplay {
+            font-size: 14px;
+            color: #2196F3;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .total-amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50; /* Default color */
+            transition: color 0.3s;
+        }
+
+        .total-amount.warning {
+            color: #FF9800; /* Orange/Yellow for caution */
+        }
+
+        .total-amount.over-budget {
+            color: #F44336; /* Red for over budget */
+        }
+
+        .bottom-buttons {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .clear-btn, .budget-btn {
+            flex: 1;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .clear-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #da190b;
+        }
+        
+        .budget-btn {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .budget-btn:hover {
+            background: #1976D2;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+
+        .modal-barcode {
+            color: #757575;
+            font-size: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #757575;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn.primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .modal-btn.primary:hover {
+            background: #45a049;
+        }
+
+        .modal-btn.secondary {
+            background: #e0e0e0;
+            color: #212121;
+        }
+
+        .modal-btn.secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .modal-btn.danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .modal-btn.danger:hover {
+            background: #da190b;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .status-message.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛒 My Shopping Cart</h1>
+        <div class="item-count" id="itemCount">0 items</div>
+    </div>
+
+    <div class="container">
+        <div class="scan-section">
+            <button class="scan-button" id="scanBtn">
+                📷 Scan Barcode with Camera
+            </button>
+            <button class="manual-entry-btn" id="manualBtn">
+                ✍️ Add Item Manually (No Barcode)
+            </button>
+            <div id="videoContainer">
+                <video id="video" playsinline autoplay></video>
+                <div class="scan-line"></div>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div id="statusMessage"></div>
+        </div>
+
+        <div id="cartItems"></div>
+
+        <div class="cart-empty" id="emptyState">
+            <div class="cart-empty-icon">🛍️</div>
+            <p>Your cart is empty</p>
+            <p style="font-size: 14px; margin-top: 8px;">Scan or add items to get started!</p>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="bottom-content">
+            <div class="total-section">
+                <div class="total-info">
+                    <div class="total-label">Current Total</div>
+                    <div id="budgetDisplay"></div>
+                </div>
+                <div class="total-amount" id="totalAmount">$0.00</div>
+            </div>
+            <div class="bottom-buttons">
+                <button class="budget-btn" id="setBudgetBtn">💰 Set Budget</button>
+                <button class="clear-btn" id="clearBtn">Clear Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">Add Item to Cart</div>
+            <div class="modal-barcode" id="modalBarcode"></div>
+            <div class="form-group">
+                <label>Item Name *</label>
+                <input type="text" id="itemName" placeholder="Enter item name" required>
+            </div>
+            <div class="form-group">
+                <label>Price *</label>
+                <input type="number" id="itemPrice" placeholder="0.00" step="0.01" required>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="cancelBtn">Cancel</button>
+                <button class="modal-btn primary" id="addBtn">Add to Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">Edit Item</div>
+            <div class="modal-barcode" id="editModalBarcode"></div>
+            <div class="form-group">
+                <label>Item Name</label>
+                <input type="text" id="editItemName" placeholder="Enter item name">
+            </div>
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" id="editItemPrice" placeholder="0.00" step="0.01">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="editCancelBtn">Cancel</button>
+                <button class="modal-btn primary" id="saveBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="budgetModal">
+        <div class="modal-content">
+            <div class="modal-header">Set Shopping Budget</div>
+            <div class="form-group">
+                <label>Budget Amount ($)</label>
+                <input type="number" id="budgetAmount" placeholder="e.g., 100.00" step="0.01">
+            </div>
+            <div id="currentBudgetDisplay" style="text-align: center; color: #4CAF50; margin-bottom: 15px; font-weight: bold;"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" id="budgetCancelBtn">Close</button>
+                <button class="modal-btn danger" id="clearBudgetBtn" style="display: none;">Clear Budget</button>
+                <button class="modal-btn primary" id="saveBudgetBtn">Set/Update Budget</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script>
+        let cart = [];
+        let budget = 0; // Initialize budget
+        let isScanning = false;
+        let currentEditIndex = -1;
+        let pendingBarcode = '';
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+
+        // Load data from localStorage
+        function loadData() {
+            const savedCart = localStorage.getItem('shoppingCart');
+            const savedBudget = localStorage.getItem('shoppingBudget');
+
+            if (savedCart) {
+                try {
+                    cart = JSON.parse(savedCart);
+                } catch (e) {
+                    console.error('Error loading cart:', e);
+                }
+            }
+            if (savedBudget) {
+                budget = parseFloat(savedBudget) || 0;
+            }
+            renderCart();
+        }
+
+        // Save cart to localStorage
+        function saveCart() {
+            localStorage.setItem('shoppingCart', JSON.stringify(cart));
+        }
+        
+        // Save budget to localStorage
+        function saveBudget() {
+            localStorage.setItem('shoppingBudget', budget.toFixed(2));
+            updateTotals();
+        }
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message ' + (isError ? 'error' : 'success');
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status-message';
+            }, 3000);
+        }
+
+        // Start camera scanning
+        document.getElementById('scanBtn').addEventListener('click', async () => {
+            const videoContainer = document.getElementById('videoContainer');
+            const scanBtn = document.getElementById('scanBtn');
+            
+            if (!isScanning) {
+                // Check if getUserMedia is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showStatus('Camera not supported in this browser. Try Chrome!', true);
+                    return;
+                }
+
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' } 
+                    });
+                    
+                    video.srcObject = stream;
+                    videoContainer.style.display = 'block';
+                    scanBtn.textContent = '⏹️ Stop Scanning';
+                    scanBtn.style.background = '#f44336';
+                    isScanning = true;
+                    
+                    showStatus('Point camera at barcode...', false);
+                    startBarcodeDetection();
+                    
+                } catch (err) {
+                    console.error('Camera error:', err);
+                    let message = 'Camera access denied. ';
+                    
+                    if (err.name === 'NotAllowedError') {
+                        message += 'Please allow camera permission in your browser settings.';
+                    } else if (err.name === 'NotFoundError') {
+                        message += 'No camera found.';
+                    } else {
+                        message += err.message;
+                    }
+                    
+                    showStatus(message, true);
+                }
+            } else {
+                stopScanning();
+            }
+        });
+
+        // Manual entry button
+        document.getElementById('manualBtn').addEventListener('click', () => {
+            pendingBarcode = 'MANUAL-' + Date.now();
+            showAddModal('No barcode (manual entry)');
+        });
+
+        function stopScanning() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('videoContainer').style.display = 'none';
+            document.getElementById('scanBtn').textContent = '📷 Scan Barcode with Camera';
+            document.getElementById('scanBtn').style.background = '#4CAF50';
+            isScanning = false;
+        }
+
+        // Simple barcode detection using canvas
+        let detectionInterval;
+        function startBarcodeDetection() {
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            
+            detectionInterval = setInterval(() => {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Use Quagga for barcode detection
+                    Quagga.decodeSingle({
+                        src: canvas.toDataURL(),
+                        numOfWorkers: 0,
+                        decoder: {
+                            readers: ['ean_reader', 'upc_reader', 'code_128_reader', 'code_39_reader']
+                        },
+                        locate: true
+                    }, function(result) {
+                        if (result && result.codeResult) {
+                            clearInterval(detectionInterval);
+                            onBarcodeDetected(result.codeResult.code);
+                        }
+                    });
+                }
+            }, 500);
+        }
+
+        function onBarcodeDetected(barcode) {
+            stopScanning();
+            
+            // Check if item already exists
+            const existingIndex = cart.findIndex(item => item.barcode === barcode);
+            if (existingIndex !== -1) {
+                cart[existingIndex].quantity++;
+                saveCart();
+                renderCart();
+                showToast(`Added another ${cart[existingIndex].name}`);
+            } else {
+                pendingBarcode = barcode;
+                showAddModal(barcode);
+            }
+        }
+
+        function showAddModal(barcode) {
+            document.getElementById('modalBarcode').textContent = `Barcode: ${barcode}`;
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemPrice').value = '';
+            document.getElementById('addModal').classList.add('show');
+            document.getElementById('itemName').focus();
+        }
+
+        function showEditModal(index) {
+            currentEditIndex = index;
+            const item = cart[index];
+            document.getElementById('editModalBarcode').textContent = `Barcode: ${item.barcode}`;
+            document.getElementById('editItemName').value = item.name;
+            document.getElementById('editItemPrice').value = item.price;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        // Budget Modal Functions
+        document.getElementById('setBudgetBtn').addEventListener('click', () => {
+            document.getElementById('budgetAmount').value = budget > 0 ? budget.toFixed(2) : '';
+            document.getElementById('currentBudgetDisplay').textContent = budget > 0 ? `Current Budget: $${budget.toFixed(2)}` : 'No Budget Set';
+            document.getElementById('clearBudgetBtn').style.display = budget > 0 ? 'block' : 'none';
+            document.getElementById('budgetModal').classList.add('show');
+        });
+        
+        document.getElementById('saveBudgetBtn').addEventListener('click', () => {
+            const newBudget = parseFloat(document.getElementById('budgetAmount').value) || 0;
+            budget = newBudget;
+            saveBudget();
+            document.getElementById('budgetModal').classList.remove('show');
+            showToast(newBudget > 0 ? `Budget set to $${newBudget.toFixed(2)}` : 'Budget cleared');
+        });
+
+        document.getElementById('clearBudgetBtn').addEventListener('click', () => {
+            budget = 0;
+            document.getElementById('budgetAmount').value = '';
+            localStorage.removeItem('shoppingBudget');
+            updateTotals();
+            document.getElementById('budgetModal').classList.remove('show');
+            showToast('Budget cleared');
+        });
+        
+        document.getElementById('budgetCancelBtn').addEventListener('click', () => {
+            document.getElementById('budgetModal').classList.remove('show');
+        });
+
+        // Add item to cart
+        document.getElementById('addBtn').addEventListener('click', () => {
+            const name = document.getElementById('itemName').value.trim();
+            const price = parseFloat(document.getElementById('itemPrice').value) || 0;
+
+            if (!name) {
+                alert('Please enter item name');
+                return;
+            }
+
+            cart.push({
+                barcode: pendingBarcode,
+                name: name,
+                price: price,
+                quantity: 1
+            });
+
+            saveCart();
+            renderCart();
+            document.getElementById('addModal').classList.remove('show');
+            showToast(`Added ${name} to cart`);
+        });
+
+        // Save edited item
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            const name = document.getElementById('editItemName').value.trim();
+            const price = parseFloat(document.getElementById('editItemPrice').value) || 0;
+
+            if (name) {
+                cart[currentEditIndex].name = name;
+                cart[currentEditIndex].price = price;
+                saveCart();
+                renderCart();
+                document.getElementById('editModal').classList.remove('show');
+                showToast('Item updated');
+            }
+        });
+
+        // Cancel buttons
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            document.getElementById('addModal').classList.remove('show');
+        });
+
+        document.getElementById('editCancelBtn').addEventListener('click', () => {
+            document.getElementById('editModal').classList.remove('show');
+        });
+
+        // Clear cart
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (cart.length === 0) {
+                showToast('Cart is already empty');
+                return;
+            }
+
+            if (confirm('Are you sure you want to clear all items from your cart?')) {
+                cart = [];
+                saveCart();
+                renderCart();
+                showToast('Cart cleared');
+            }
+        });
+
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (cart.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                container.innerHTML = cart.map((item, index) => {
+                    const subtotal = item.price * item.quantity;
+                    return `
+                        <div class="cart-item">
+                            <div class="item-header">
+                                <div class="item-info">
+                                    <h3>${item.name}</h3>
+                                    <div class="item-price">$${item.price.toFixed(2)} each</div>
+                                </div>
+                                <div class="item-subtotal">$${subtotal.toFixed(2)}</div>
+                            </div>
+                            <div class="item-divider"></div>
+                            <div class="item-controls">
+                                <div class="quantity-controls">
+                                    <button class="qty-btn" onclick="decreaseQty(${index})">−</button>
+                                    <div class="quantity">${item.quantity}</div>
+                                    <button class="qty-btn" onclick="increaseQty(${index})">+</button>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="icon-btn" onclick="editItem(${index})" title="Edit">✏️</button>
+                                    <button class="icon-btn delete" onclick="removeItem(${index})" title="Remove">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            updateTotals();
+        }
+
+        function increaseQty(index) {
+            cart[index].quantity++;
+            saveCart();
+            renderCart();
+        }
+
+        function decreaseQty(index) {
+            if (cart[index].quantity > 1) {
+                cart[index].quantity--;
+                saveCart();
+                renderCart();
+            }
+        }
+
+        function editItem(index) {
+            showEditModal(index);
+        }
+
+        function removeItem(index) {
+            const itemName = cart[index].name;
+            cart.splice(index, 1);
+            saveCart();
+            renderCart();
+            showToast(`Removed ${itemName}`);
+        }
+
+        function updateTotals() {
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalAmountElement = document.getElementById('totalAmount');
+            const budgetDisplayElement = document.getElementById('budgetDisplay');
+            
+            totalAmountElement.textContent = `$${total.toFixed(2)}`;
+            document.getElementById('itemCount').textContent = `${itemCount} item${itemCount !== 1 ? 's' : ''}`;
+
+            // Budget Logic
+            totalAmountElement.classList.remove('warning', 'over-budget');
+            if (budget > 0) {
+                const remaining = budget - total;
+                budgetDisplayElement.textContent = `Budget: $${budget.toFixed(2)} (${remaining < 0 ? 'OVER' : 'Remaining'}: $${Math.abs(remaining).toFixed(2)})`;
+                
+                if (remaining < 0) {
+                    totalAmountElement.classList.add('over-budget');
+                } else if (remaining < budget * 0.20) { // Less than 20% remaining
+                    totalAmountElement.classList.add('warning');
+                } 
+            } else {
+                budgetDisplayElement.textContent = 'No budget set';
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 150px; /* Adjusted for larger bottom bar */
+                left: 50%;
+                transform: translateX(-50%);
+                background: #323232;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 24px;
+                z-index: 2000;
+                animation: fadeInOut 2s ease-in-out;
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInOut {
+                0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Load cart and budget on page load
+        loadData();
+    </script>
+</body>
+</html>
